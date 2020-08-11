@@ -1,0 +1,80 @@
+/*
+ * Kushal Dalsania <kushal.dalsania@gmail.com>
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	/*
+	 * Helper to show loaded overlays under: /proc/device-tree/chosen/overlays/
+	 */
+	fragment@0 {
+		target-path="/";
+		__overlay__ {
+
+			chosen {
+				overlays {
+					BB-SPI1-MCP3301-00A0 = __TIMESTAMP__;
+				};
+			};
+		};
+	};
+
+	/*
+	 * Free up the pins used by the cape from the pinmux helpers.
+	 */
+	fragment@1 {
+		target = <&ocp>;
+		__overlay__ {
+			P9_28_pinmux { status = "disabled"; };	/* CS - spi1_cs0 */
+			P9_42_pinmux { status = "disabled"; };	/* CS - spi1_cs1 */
+			P9_31_pinmux { status = "disabled"; };	/* SCK - spi1_sclk */
+			P9_29_pinmux { status = "disabled"; };	/* MISO - spi1_d0 */
+			P9_30_pinmux { status = "disabled"; };	/* MOSI - spi1_d1 */   
+		};
+	};
+
+	fragment@2 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			bb_spi1_pins: pinmux_bb_spi1_pins {
+				pinctrl-single,pins = <
+          AM33XX_IOPAD(0x0990, PIN_INPUT | MUX_MODE3 ) /* P9_31 (A13) mcasp0_aclkx.spi1_sclk */
+					AM33XX_IOPAD(0x0994, PIN_INPUT | MUX_MODE3 ) /* P9_29 (B13) mcasp0_fsx.spi1_d0 */
+					AM33XX_IOPAD(0x0998, PIN_INPUT | MUX_MODE3 ) /* P9_30 (D12) mcasp0_axr0.spi1_d1 */
+					AM33XX_IOPAD(0x099C, PIN_INPUT | MUX_MODE3 ) /* P9_28 (C12) mcasp0_ahclkr.spi1_cs0 */
+					AM33XX_IOPAD(0x0964, PIN_INPUT | MUX_MODE2 ) /* P9_42 (C18) eCAP0_in_PWM0_out.spi1_cs1 */
+          
+				>;
+			};
+		};
+	};
+
+  fragment@3 {
+		target = <&spi1>;
+		__overlay__ {
+			status = "okay";
+			cs-gpios = <0>, <0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_spi1_pins>;
+		};
+	};
+  
+	fragment@4 {
+		target = <&spi1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+      
+			mcp3301@0 {
+        compatible = "mcp3301";
+        reg = <0x1>;
+				spi-max-frequency = <1000000>;
+			};
+		};
+	};
+};
